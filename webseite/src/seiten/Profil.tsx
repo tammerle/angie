@@ -1,8 +1,8 @@
-import { Camera, Images, KeyRound, Lock, LogOut, User, UserX } from 'lucide-react'
+import { Camera, Images, KeyRound, Lock, User, UserX } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { SALON } from '../konfig.ts'
 import { benutzerAvatarSetzen, profilAendern, statusSetzen, useDaten } from '../daten/aktionen.ts'
-import { abmelden, passwortAendern, useSitzung } from '../daten/sitzung.ts'
+import { passwortAendern, useSitzung } from '../daten/sitzung.ts'
 import { PFAD } from '../daten/typen.ts'
 import { useT } from '../i18n/index.ts'
 import { BenutzerAvatar } from '../ui/Avatar.tsx'
@@ -141,46 +141,41 @@ export function Profil() {
       <div className="profil__raster">
         <section className="karte">
           <div className="karte__kopf">
-            <h3 className="karte__titel">{t.status.titel}</h3>
+            <h3 className="karte__titel">
+              <User size={20} /> {t.profil.daten}
+            </h3>
           </div>
-          <div className="karte__inhalt">
-            <StatusWahl status={profil?.status ?? null} waehlen={(s) => statusSetzen(s)} />
-          </div>
-        </section>
-
-        <div className="profil__spalte">
-          <section className="karte">
-            <div className="karte__kopf">
-              <h3 className="karte__titel">
-                <User size={20} /> {t.profil.daten}
-              </h3>
+          <form
+            className="karte__inhalt formular"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!name.trim()) return
+              profilAendern({ anzeigename: name.trim(), rolle: rolle.trim() })
+              zeigeHinweis(t.profil.gespeichert)
+            }}
+          >
+            <Feld label={t.profil.anzeigename} value={name} onChange={(e) => setName(e.target.value)} maxLength={30} />
+            <Feld label={t.profil.rolle} value={rolle} onChange={(e) => setRolle(e.target.value)} maxLength={40} />
+            <Feld label={t.profil.benutzername} value={benutzer} readOnly disabled />
+            <div className="zeile-rechts">
+              <button type="submit" className="knopf knopf--primaer" disabled={!geaendert || !name.trim()}>
+                {t.allgemein.speichern}
+              </button>
             </div>
-            <form
-              className="karte__inhalt formular"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (!name.trim()) return
-                profilAendern({ anzeigename: name.trim(), rolle: rolle.trim() })
-                zeigeHinweis(t.profil.gespeichert)
-              }}
-            >
-              <Feld label={t.profil.anzeigename} value={name} onChange={(e) => setName(e.target.value)} maxLength={30} />
-              <Feld label={t.profil.rolle} value={rolle} onChange={(e) => setRolle(e.target.value)} maxLength={40} />
-              <Feld label={t.profil.benutzername} value={benutzer} readOnly disabled />
-              <div className="zeile-rechts">
-                <button type="submit" className="knopf knopf--primaer" disabled={!geaendert || !name.trim()}>
-                  {t.allgemein.speichern}
-                </button>
-              </div>
-            </form>
-          </section>
-          <PasswortKarte />
-        </div>
+          </form>
+        </section>
+        <PasswortKarte />
       </div>
 
-      <button type="button" className="knopf knopf--rahmen knopf--breit nur-handy" onClick={abmelden}>
-        <LogOut size={18} /> {t.navi.abmelden}
-      </button>
+      {/* Wohlbefinden ganz unten; Abmelden steht im Profilmenü oben rechts. */}
+      <section className="karte">
+        <div className="karte__kopf">
+          <h3 className="karte__titel">{t.status.titel}</h3>
+        </div>
+        <div className="karte__inhalt">
+          <StatusWahl status={profil?.status ?? null} waehlen={(s) => statusSetzen(s)} />
+        </div>
+      </section>
 
       <input ref={kamera} type="file" accept="image/*" capture="user" hidden onChange={bildWaehlen} />
       <input ref={datei} type="file" accept="image/*" hidden onChange={bildWaehlen} />

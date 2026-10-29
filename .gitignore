@@ -1,0 +1,18 @@
+# angie ist ein öffentliches Repo. Im Ordner tischlerei liegen Kundendaten
+# (projekte, kueche_chizzola, raeume), Herstellerdateien (blum-downloads),
+# interne Unterlagen (cowork) und vier eigene Git-Repos (korpuskonfigurator,
+# mcp, robotik, TISCHLEREI). Deshalb ist zuerst alles ausgeschlossen und nur
+# freigegeben, was unten mit ! steht.
+#
+# Einen Ordner freigeben:            !/ordner/
+# Nur eine Datei darin freigeben:    !/ordner/
+#                                    /ordner/*
+#                                    !/ordner/datei.md
+/*
+
+!/.gitignore
+!/README.md
+
+# Webseite (React + TypeScript); node_modules und dist schließt webseite/.gitignore aus
+!/webseite/
+!/.github/

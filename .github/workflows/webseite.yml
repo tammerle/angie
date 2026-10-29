@@ -1,0 +1,25 @@
+name: Webseite
+
+on:
+  push:
+    branches: [main]
+    paths: ['webseite/**', '.github/workflows/webseite.yml']
+  pull_request:
+    paths: ['webseite/**', '.github/workflows/webseite.yml']
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webseite
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: webseite/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build

@@ -106,7 +106,6 @@ export function SyncAnzeige() {
       {inhalt}
     </button>
   )
-  if (sync.zustand === 'getrennt') return zeige('sync--getrennt', t.sync.getrennt, <CloudOff size={17} />)
   if (sync.zustand === 'offline') return zeige('sync--offline', t.sync.offline, <CloudOff size={17} />)
   if (sync.zustand === 'fehler' || sync.zustand === 'zugriff')
     return zeige('sync--fehler', sync.zustand === 'zugriff' ? t.sync.zugriff : t.sync.fehler, <TriangleAlert size={17} />)

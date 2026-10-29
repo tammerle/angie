@@ -50,27 +50,40 @@ function richtungZwischen(alt: Route, neu: Route): Richtung {
 
 const bewegungArm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// Scrollposition je Seite: zurück landet man wieder an derselben Stelle.
+const scrollStellen = new Map<string, number>()
+
+/** Neuer Bereich oder Detailseite: ganz nach oben. Zurück: alte Stelle. Sonst bleiben. */
+function scrollZiel(alt: Route, neu: Route, richtung: Richtung): number | null {
+  if (richtung === 'zurueck') return scrollStellen.get(neu.pfad) ?? 0
+  if (richtung === 'wechsel' && bereich(alt) === bereich(neu)) return null
+  return 0
+}
+
 function anwenden() {
   const neu = lesen()
   const alt = aktuell
   if (neu.pfad === alt.pfad && neu.suche.toString() === alt.suche.toString()) return
   const richtung = richtungZwischen(alt, neu)
+  scrollStellen.set(alt.pfad, window.scrollY)
+  const ziel = scrollZiel(alt, neu, richtung)
+  const umschalten = () => {
+    flushSync(() => {
+      aktuell = neu
+      benachrichtigen()
+    })
+    if (ziel !== null) window.scrollTo({ top: ziel, behavior: 'instant' })
+  }
   // Für Browser ohne View Transitions: CSS-Animation nach dieser Richtung (siehe rahmen.css).
   document.documentElement.dataset.letzteRichtung = richtung
   const uebergang = document.startViewTransition
   if (!uebergang || bewegungArm() || uaUebergang || document.visibilityState !== 'visible') {
     uaUebergang = false
-    aktuell = neu
-    benachrichtigen()
+    umschalten()
     return
   }
   document.documentElement.dataset.richtung = richtung
-  const t = document.startViewTransition(() => {
-    flushSync(() => {
-      aktuell = neu
-      benachrichtigen()
-    })
-  })
+  const t = document.startViewTransition(umschalten)
   t.finished.finally(() => {
     delete document.documentElement.dataset.richtung
   })
@@ -78,6 +91,7 @@ function anwenden() {
 
 if (typeof window !== 'undefined') {
   if (!document.startViewTransition) document.documentElement.classList.add('ohne-vt')
+  history.scrollRestoration = 'manual'
   // Safari animiert die Wisch-Geste „zurück“ selbst – dann keine zweite Animation.
   window.addEventListener('popstate', (e) => {
     uaUebergang = Boolean((e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition)

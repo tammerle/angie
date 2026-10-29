@@ -859,10 +859,6 @@ button.pille--aktiv:hover,
   color: #c97a2c;
 }
 
-.sync--getrennt {
-  color: var(--text-3);
-}
-
 .sync--fehler {
   color: var(--gefahr);
 }

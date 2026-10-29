@@ -167,6 +167,7 @@ export function Rahmen({ children }: { children: ReactNode }) {
         <nav className="kopf__rechts">
           <SyncAnzeige />
           <div className="nur-desktop kopf__knoepfe">
+            <KopfKnopf symbol={Users} text={t.navi.kunden} aktiv={bereich === 'kunden'} onClick={() => gehe('/kunden')} />
             <KopfKnopf symbol={LayoutDashboard} text={t.navi.uebersicht} aktiv={bereich === 'uebersicht'} onClick={() => gehe('/uebersicht')} />
             <KopfKnopf symbol={NotebookPen} text={t.navi.notizen} aktiv={bereich === 'notizen'} onClick={() => gehe('/notizen')} />
             <KopfKnopf symbol={UserPlus} text={t.navi.neuerKunde} onClick={() => neuerKundeOeffnen()} />

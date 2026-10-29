@@ -59,7 +59,7 @@ export function GithubVerbindung() {
   }
 
   return (
-    <section className={`karte ${!verbunden ? 'karte--hinweis' : ''}`}>
+    <section className="karte">
       <div className="karte__kopf">
         <h3 className="karte__titel">
           {verbunden ? <CloudCheck size={20} /> : <CloudOff size={20} />} {t.einrichtung.karte}

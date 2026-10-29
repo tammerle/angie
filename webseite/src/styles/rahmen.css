@@ -775,7 +775,7 @@ button.pille--aktiv:hover,
 }
 
 .sync--getrennt {
-  color: var(--akzent);
+  color: var(--text-3);
 }
 
 .sync--fehler {

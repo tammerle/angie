@@ -395,11 +395,11 @@ export function KundeDetail({ id, reiter: reiterRoh }: { id: string; reiter?: st
           <Rose />
         </div>
         <div className="kundenkopf__aktionen">
-          <button type="button" className="symbol" onClick={() => setFormular(true)} aria-label={t.allgemein.bearbeiten}>
-            <Pencil size={18} />
+          <button type="button" className="knopf knopf--sanft knopf--klein" onClick={() => setFormular(true)}>
+            <Pencil size={16} /> {t.allgemein.bearbeiten}
           </button>
-          <button type="button" className="symbol" onClick={() => setLoeschFrage(true)} aria-label={t.allgemein.loeschen}>
-            <Trash2 size={18} />
+          <button type="button" className="knopf knopf--rahmen knopf--klein kundenkopf__loeschen" onClick={() => setLoeschFrage(true)}>
+            <Trash2 size={16} /> {t.allgemein.loeschen}
           </button>
         </div>
       </section>

@@ -48,7 +48,6 @@ export function Einstellungen() {
     <div className="seite einstellungen">
       <h1 className="seite__titel erscheinen">{t.einstellungen.titel}</h1>
 
-      {getrennt && <GithubVerbindung />}
 
       <section className="karte">
         <div className="karte__kopf">
@@ -112,8 +111,6 @@ export function Einstellungen() {
         </div>
       </section>
 
-      {!getrennt && <GithubVerbindung />}
-
       <section className="karte">
         <div className="karte__kopf">
           <h3 className="karte__titel">
@@ -127,6 +124,12 @@ export function Einstellungen() {
           </p>
         </div>
       </section>
+
+      {/* Nur für die Einrichtung durch den Besitzer – im Alltag zugeklappt. */}
+      <details className="erweitert">
+        <summary>{t.einstellungen.erweitert}</summary>
+        <GithubVerbindung />
+      </details>
     </div>
   )
 }

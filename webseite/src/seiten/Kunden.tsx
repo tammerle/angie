@@ -1,14 +1,16 @@
-import { ArrowUpDown, ChevronRight, Plus, Search, Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useDaten } from '../daten/aktionen.ts'
+import { ArrowUpDown, Ellipsis, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { kundeLoeschen, useDaten } from '../daten/aktionen.ts'
 import type { Kunde } from '../daten/typen.ts'
 import { useGebiet, useT } from '../i18n/index.ts'
 import { datumFormat, suchtext, vollerName } from '../lib/hilfen.ts'
 import { gehe, useRoute } from '../lib/router.ts'
 import { KundenAvatar } from '../ui/Avatar.tsx'
 import { useIstHandy } from '../ui/Fotos.tsx'
-import { Leer } from '../ui/Kleinteile.tsx'
+import { Bestaetigen } from '../ui/Blatt.tsx'
+import { Leer, zeigeHinweis } from '../ui/Kleinteile.tsx'
 import { KundeDetail } from './KundeDetail.tsx'
+import { KundeFormular } from './KundeFormular.tsx'
 import { neuerKundeOeffnen } from './Rahmen.tsx'
 
 type Sortierung = 'zuletzt' | 'name'
@@ -32,12 +34,68 @@ function useKundenListe(begriff: string, sortierung: Sortierung) {
 // der Seitenwechsel auch bei vielen Kunden leicht.
 let zuletztGeoeffnet: string | null = null
 
-function Eintrag({ kunde, aktiv, handy }: { kunde: Kunde; aktiv: boolean; handy: boolean }) {
+/** „⋯“ an jedem Eintrag: Bearbeiten und Löschen direkt aus der Liste. */
+function EintragMenue({ bearbeiten, loeschen }: { bearbeiten: () => void; loeschen: () => void }) {
+  const t = useT()
+  const [offen, setOffen] = useState(false)
+  const huelle = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!offen) return
+    const klick = (e: PointerEvent) => !huelle.current?.contains(e.target as Node) && setOffen(false)
+    document.addEventListener('pointerdown', klick)
+    return () => document.removeEventListener('pointerdown', klick)
+  }, [offen])
+  return (
+    <div className="kleinmenue kundeneintrag__menue" ref={huelle}>
+      <button type="button" className="symbol" onClick={() => setOffen((o) => !o)} aria-label={t.kunde.mehr} aria-expanded={offen}>
+        <Ellipsis size={18} />
+      </button>
+      {offen && (
+        <div className="kleinmenue__flaeche erscheinen">
+          <button
+            type="button"
+            onClick={() => {
+              setOffen(false)
+              bearbeiten()
+            }}
+          >
+            <Pencil size={16} /> {t.allgemein.bearbeiten}
+          </button>
+          <button
+            type="button"
+            className="kleinmenue__gefahr"
+            onClick={() => {
+              setOffen(false)
+              loeschen()
+            }}
+          >
+            <Trash2 size={16} /> {t.allgemein.loeschen}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Eintrag({
+  kunde,
+  aktiv,
+  handy,
+  bearbeiten,
+  loeschen,
+}: {
+  kunde: Kunde
+  aktiv: boolean
+  handy: boolean
+  bearbeiten: () => void
+  loeschen: () => void
+}) {
   const t = useT()
   const gebiet = useGebiet()
   const besuch = kunde.letzterBesuch ? datumFormat(kunde.letzterBesuch, gebiet) : ''
   return (
-    <li>
+    <li className="kundeneintrag-huelle">
+      <EintragMenue bearbeiten={bearbeiten} loeschen={loeschen} />
       <button
         type="button"
         className={`kundeneintrag ${aktiv ? 'ist-aktiv' : ''}`}
@@ -58,15 +116,11 @@ function Eintrag({ kunde, aktiv, handy }: { kunde: Kunde; aktiv: boolean; handy:
           {kunde.telefon && <small>{kunde.telefon}</small>}
           {handy && <small className="kundeneintrag__besuch">{besuch ? `${t.kunden.letzterBesuch}: ${besuch}` : t.kunden.keinBesuch}</small>}
         </span>
-        {handy ? (
-          <ChevronRight size={18} className="kundeneintrag__pfeil" />
-        ) : (
-          besuch && (
-            <span className="kundeneintrag__datum">
-              {besuch}
-              <small>{t.kunden.letzterBesuch}</small>
-            </span>
-          )
+        {!handy && besuch && (
+          <span className="kundeneintrag__datum">
+            {besuch}
+            <small>{t.kunden.letzterBesuch}</small>
+          </span>
         )}
       </button>
     </li>
@@ -81,6 +135,8 @@ function KundenListe({ aktivId }: { aktivId?: string }) {
   const [sortierung, setSortierung] = useState<Sortierung>('zuletzt')
   const liste = useKundenListe(begriff, sortierung)
   const laedt = !sync.ersterAbgleich && kunden.length === 0
+  const [bearbeiten, setBearbeiten] = useState<Kunde | null>(null)
+  const [loeschen, setLoeschen] = useState<Kunde | null>(null)
 
   return (
     <section className="kundenliste">
@@ -136,10 +192,40 @@ function KundenListe({ aktivId }: { aktivId?: string }) {
       ) : (
         <ul className="kundenliste__liste">
           {liste.map((k) => (
-            <Eintrag key={k.id} kunde={k} aktiv={k.id === aktivId} handy={handy} />
+            <Eintrag
+              key={k.id}
+              kunde={k}
+              aktiv={k.id === aktivId}
+              handy={handy}
+              bearbeiten={() => setBearbeiten(k)}
+              loeschen={() => setLoeschen(k)}
+            />
           ))}
         </ul>
       )}
+      <KundeFormular
+        offen={!!bearbeiten}
+        kunde={bearbeiten ?? undefined}
+        schliessen={() => setBearbeiten(null)}
+        loeschen={() => {
+          setLoeschen(bearbeiten)
+          setBearbeiten(null)
+        }}
+      />
+      <Bestaetigen
+        offen={!!loeschen}
+        titel={loeschen ? t.kunde.loeschenFrage(vollerName(loeschen)) : ''}
+        text={t.kunde.loeschenText}
+        knopf={t.allgemein.loeschen}
+        nein={() => setLoeschen(null)}
+        ja={() => {
+          if (!loeschen) return
+          kundeLoeschen(loeschen.id)
+          zeigeHinweis(t.kunde.geloescht)
+          if (aktivId === loeschen.id) gehe('/kunden', true)
+          setLoeschen(null)
+        }}
+      />
     </section>
   )
 }

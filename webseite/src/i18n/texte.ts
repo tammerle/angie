@@ -256,6 +256,7 @@ const de = {
     ueber: 'Über die App',
     ueberText: 'Daten liegen privat in GitHub (tammerle/angie-daten). Beide Profile sehen und bearbeiten alles.',
     version: 'Version',
+    erweitert: 'Erweitert',
   },
   sync: {
     synchron: 'Synchronisiert',
@@ -528,6 +529,7 @@ const it: Texte = {
     ueber: 'Informazioni',
     ueberText: 'I dati sono privati su GitHub (tammerle/angie-daten). Entrambi i profili vedono e modificano tutto.',
     version: 'Versione',
+    erweitert: 'Avanzate',
   },
   sync: {
     synchron: 'Sincronizzato',
@@ -798,6 +800,7 @@ const en: Texte = {
     ueber: 'About',
     ueberText: 'Data is stored privately on GitHub (tammerle/angie-daten). Both profiles can see and edit everything.',
     version: 'Version',
+    erweitert: 'Advanced',
   },
   sync: {
     synchron: 'Synced',

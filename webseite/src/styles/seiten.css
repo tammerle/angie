@@ -313,7 +313,6 @@ small.kundeneintrag__besuch {
 }
 
 .kundenkopf__text h1 {
-  padding-right: 70px;
   font-size: 23px;
   font-weight: 750;
   overflow-wrap: break-word;
@@ -357,12 +356,23 @@ small.kundeneintrag__besuch {
   color: var(--text-3);
 }
 
+/* Bearbeiten / Löschen: auf dem Handy als Zeile unter dem Kopf, am Computer unter den Kontaktdaten */
 .kundenkopf__aktionen {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  grid-column: 1 / -1;
   display: flex;
-  gap: 2px;
+  gap: 8px;
+}
+
+.kundenkopf__aktionen .knopf {
+  flex: 1;
+}
+
+.kundenkopf__loeschen {
+  color: var(--gefahr);
+}
+
+.kundenkopf__loeschen:hover:not(:disabled) {
+  border-color: var(--gefahr);
 }
 
 .kundenkopf__spruch {
@@ -398,8 +408,18 @@ small.kundeneintrag__besuch {
     padding-right: 0;
     font-size: 30px;
   }
+  .kundenkopf__aktionen {
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-start;
+    margin-top: -6px;
+  }
+  .kundenkopf__aktionen .knopf {
+    flex: none;
+  }
+  .kundenkopf__avatar,
   .kundenkopf__spruch {
-    margin-right: 64px;
+    grid-row: 1 / span 2;
   }
 }
 
@@ -1681,15 +1701,6 @@ small.kundeneintrag__besuch {
 
 /* GitHub-Verbindung in den Einstellungen */
 
-.karte--hinweis {
-  border-color: color-mix(in srgb, var(--akzent) 45%, transparent);
-  box-shadow: 0 0 0 4px var(--akzent-hauch), var(--schatten-1);
-}
-
-.karte--hinweis .karte__titel svg {
-  color: var(--akzent);
-}
-
 .verbindung {
   display: grid;
   gap: 14px;
@@ -1712,4 +1723,81 @@ small.kundeneintrag__besuch {
   flex: 1;
   min-width: 220px;
   margin: 0;
+}
+
+/* Menü „⋯“ an den Einträgen der Kundenliste */
+
+.kundeneintrag-huelle {
+  position: relative;
+}
+
+.kundeneintrag-huelle .kundeneintrag {
+  padding-right: 48px;
+}
+
+.kundeneintrag__menue {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.kundeneintrag__menue .symbol {
+  color: var(--text-3);
+}
+
+.kundeneintrag__menue .kleinmenue__flaeche {
+  top: calc(100% + 2px);
+}
+
+.geteilt__seite .kundeneintrag-huelle .kundeneintrag {
+  padding-right: 40px;
+}
+
+@media (hover: hover) {
+  .geteilt__seite .kundeneintrag__menue .symbol {
+    opacity: 0;
+    transition: opacity var(--schnell);
+  }
+  .geteilt__seite .kundeneintrag-huelle:hover .kundeneintrag__menue .symbol,
+  .geteilt__seite .kundeneintrag__menue .symbol:focus-visible,
+  .geteilt__seite .kundeneintrag__menue .symbol[aria-expanded='true'] {
+    opacity: 1;
+  }
+}
+
+/* Zugeklappter Bereich „Erweitert“ in den Einstellungen */
+
+.erweitert {
+  display: grid;
+  gap: 12px;
+}
+
+.erweitert > summary {
+  justify-self: start;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.erweitert > summary::-webkit-details-marker {
+  display: none;
+}
+
+.erweitert > summary::after {
+  content: ' ›';
+}
+
+.erweitert[open] > summary::after {
+  content: ' ˅';
+}
+
+.erweitert > summary:hover {
+  background: var(--akzent-hauch);
+  color: var(--text-2);
 }

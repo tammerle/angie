@@ -8,7 +8,8 @@ import { KonfliktFehler, NetzFehler, textZuBase64, ZugriffFehler, type Quelle } 
 import type { FotoInfo, Kunde, Notiz, Ordner, Profil } from './typen.ts'
 import { objektZusammenfuehren, type Zusammenfuehrung } from './zusammenfuehren.ts'
 
-export type SyncZustand = 'bereit' | 'laeuft' | 'offline' | 'fehler' | 'zugriff'
+/** getrennt = noch nicht mit GitHub verbunden, alles bleibt auf diesem Gerät */
+export type SyncZustand = 'bereit' | 'laeuft' | 'offline' | 'fehler' | 'zugriff' | 'getrennt'
 
 export interface Datenstand {
   geladen: boolean
@@ -35,7 +36,8 @@ type Auftrag =
   | { id: string; art: 'loeschen'; pfad: string; zeit: number }
 
 export interface SpeicherOptionen {
-  quelle: Quelle
+  /** null: noch kein GitHub-Schlüssel – die App läuft lokal, die Warteschlange wartet */
+  quelle: Quelle | null
   benutzer: string
   anzeigename: (name: string) => string
   zeitText: (iso: string) => string
@@ -79,7 +81,16 @@ export class Speicher {
   constructor(optionen: SpeicherOptionen) {
     this.o = { ruhe: 1800, abgleichAlle: 15_000, ...optionen }
     this.idb = createStore(optionen.datenbank, 'daten')
+    if (!optionen.quelle) {
+      this.zustand = 'getrennt'
+      this.ersterAbgleich = true
+    }
     this.stand = this.berechnen(false)
+  }
+
+  private get q(): Quelle {
+    if (!this.o.quelle) throw new NetzFehler('nicht verbunden')
+    return this.o.quelle
   }
 
   // ---------- Lesen für die Oberfläche ----------
@@ -169,6 +180,7 @@ export class Speicher {
       }
     }
     this.melden()
+    if (!this.o.quelle) return
     document.addEventListener('visibilitychange', this.sichtbar)
     window.addEventListener('online', this.sofort)
     void this.abgleichen()
@@ -237,7 +249,7 @@ export class Speicher {
       const gespeichert = await get<Blob>(`b:${sha}`, this.idb)
       if (gespeichert) return gespeichert
       try {
-        const blob = await this.o.quelle.blob(sha)
+        const blob = await this.q.blob(sha)
         void set(`b:${sha}`, blob, this.idb)
         return blob
       } catch {
@@ -261,7 +273,7 @@ export class Speicher {
   /** Lädt Wartendes hoch und holt Änderungen der anderen. Läuft schon ein
    *  Abgleich, wird er danach wiederholt; das Versprechen gilt für beides. */
   abgleichen(sofort = false): Promise<void> {
-    if (this.gestoppt) return Promise.resolve()
+    if (this.gestoppt || !this.o.quelle) return Promise.resolve()
     if (sofort) this.sofortWunsch = true
     if (this.lauf) {
       this.nochmal = true
@@ -289,13 +301,15 @@ export class Speicher {
         this.setzeZustand('bereit')
         if (rest !== null) naechster = Math.min(naechster, rest)
       } catch (e) {
-        if (e instanceof ZugriffFehler) this.setzeZustand('zugriff')
-        else if (e instanceof NetzFehler) this.setzeZustand('offline')
+        naechster = 10_000
+        if (e instanceof ZugriffFehler) {
+          this.setzeZustand('zugriff')
+          naechster = 60_000
+        } else if (e instanceof NetzFehler) this.setzeZustand('offline')
         else {
           console.error(e)
           this.setzeZustand('fehler')
         }
-        naechster = 10_000
         break
       }
     } while (this.nochmal && !this.gestoppt)
@@ -355,7 +369,7 @@ export class Speicher {
     for (let versuch = 0; versuch < 6; versuch++) {
       const text = JSON.stringify(objekt, null, 2) + '\n'
       try {
-        const neu = await this.o.quelle.schreiben(a.pfad, textZuBase64(text), sha, this.nachricht(a.pfad, 'speichern'))
+        const neu = await this.q.schreiben(a.pfad, textZuBase64(text), sha, this.nachricht(a.pfad, 'speichern'))
         this.baum.set(a.pfad, neu)
         this.basis.set(a.pfad, { sha: neu, text })
         await setMany([[`d:${a.pfad}`, { sha: neu, text }]], this.idb)
@@ -364,7 +378,7 @@ export class Speicher {
         return
       } catch (e) {
         if (!(e instanceof KonfliktFehler)) throw e
-        const fern = await this.o.quelle.lesen(a.pfad)
+        const fern = await this.q.lesen(a.pfad)
         if (!fern) {
           sha = null
           continue
@@ -409,7 +423,7 @@ export class Speicher {
     let sha = this.baum.get(a.pfad) ?? null
     for (let versuch = 0; versuch < 4; versuch++) {
       try {
-        const neu = await this.o.quelle.schreiben(a.pfad, base64, sha, this.nachricht(a.pfad, 'bild'))
+        const neu = await this.q.schreiben(a.pfad, base64, sha, this.nachricht(a.pfad, 'bild'))
         this.baum.set(a.pfad, neu)
         void set(`b:${neu}`, a.blob, this.idb)
         if (!this.ausgang.some((x) => x.pfad === a.pfad && x.id !== a.id)) this.lokaleBilder.delete(a.pfad)
@@ -417,21 +431,21 @@ export class Speicher {
         return
       } catch (e) {
         if (!(e instanceof KonfliktFehler)) throw e
-        sha = (await this.o.quelle.lesen(a.pfad))?.sha ?? null
+        sha = (await this.q.lesen(a.pfad))?.sha ?? null
       }
     }
     throw new NetzFehler(`Bild: zu viele Konflikte: ${a.pfad}`)
   }
 
   private async loeschenHochladen(a: Extract<Auftrag, { art: 'loeschen' }>) {
-    let sha = this.baum.get(a.pfad) ?? (await this.o.quelle.lesen(a.pfad))?.sha ?? null
+    let sha = this.baum.get(a.pfad) ?? (await this.q.lesen(a.pfad))?.sha ?? null
     for (let versuch = 0; versuch < 4 && sha; versuch++) {
       try {
-        await this.o.quelle.loeschen(a.pfad, sha, this.nachricht(a.pfad, 'löschen'))
+        await this.q.loeschen(a.pfad, sha, this.nachricht(a.pfad, 'löschen'))
         break
       } catch (e) {
         if (!(e instanceof KonfliktFehler)) throw e
-        sha = (await this.o.quelle.lesen(a.pfad))?.sha ?? null
+        sha = (await this.q.lesen(a.pfad))?.sha ?? null
       }
     }
     this.baum.delete(a.pfad)
@@ -441,7 +455,7 @@ export class Speicher {
   }
 
   private async herunterladen() {
-    const b = await this.o.quelle.baum(this.etag)
+    const b = await this.q.baum(this.etag)
     if (!b.eintraege) return
     const fern = new Map(b.eintraege.map((e) => [e.pfad, e.sha]))
     const wartend = new Set(this.ausgang.map((a) => a.pfad))
@@ -451,7 +465,7 @@ export class Speicher {
       if (this.basis.get(pfad)?.sha !== sha) zuLaden.push([pfad, sha])
     }
     const weg = [...this.baum.keys()].filter((p) => !fern.has(p) && !wartend.has(p))
-    const texte = zuLaden.length ? await this.o.quelle.texte(zuLaden.map(([, s]) => s)) : new Map<string, string>()
+    const texte = zuLaden.length ? await this.q.texte(zuLaden.map(([, s]) => s)) : new Map<string, string>()
 
     const naechster = new Map(fern)
     const neueBasis: [string, Basis][] = []

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { useSitzung, wiederherstellen } from './daten/sitzung.ts'
-import { Anmelden, Einrichtung } from './seiten/Anmelden.tsx'
+import { Anmelden } from './seiten/Anmelden.tsx'
 import { Logo } from './ui/Logo.tsx'
 
 const ladeInhalt = () => import('./AppInhalt.tsx')
@@ -25,7 +25,6 @@ export default function App() {
 
   if (phase === 'start') return <Startbild />
   if (phase === 'abgemeldet') return <Anmelden />
-  if (phase === 'einrichtung') return <Einrichtung />
   return (
     <Suspense fallback={<Startbild />}>
       <AppInhalt />

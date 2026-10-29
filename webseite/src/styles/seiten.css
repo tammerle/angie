@@ -1678,3 +1678,38 @@ small.kundeneintrag__besuch {
 .synckarte .knopf {
   justify-self: start;
 }
+
+/* GitHub-Verbindung in den Einstellungen */
+
+.karte--hinweis {
+  border-color: color-mix(in srgb, var(--akzent) 45%, transparent);
+  box-shadow: 0 0 0 4px var(--akzent-hauch), var(--schatten-1);
+}
+
+.karte--hinweis .karte__titel svg {
+  color: var(--akzent);
+}
+
+.verbindung {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+
+.verbindung form {
+  width: 100%;
+}
+
+.verbindung .schritte {
+  margin: 4px 0 12px;
+}
+
+.verbindung__fuss {
+  align-items: flex-end;
+}
+
+.verbindung__fuss .schritte__sicher {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+}

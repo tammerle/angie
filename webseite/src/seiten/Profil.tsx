@@ -36,6 +36,7 @@ function PasswortKarte() {
       zeigeHinweis(t.profil.passwortGeaendert)
     } else if (ergebnis === 'falsch') setFehler({ feld: 'alt', text: t.profil.passwortFalsch })
     else if (ergebnis === 'netz') setFehler({ feld: 'allg', text: t.profil.passwortOffline })
+    else if (ergebnis === 'getrennt') setFehler({ feld: 'allg', text: t.profil.passwortGetrennt })
     else setFehler({ feld: 'allg', text: t.einrichtung.fehlerZugang })
   }
 

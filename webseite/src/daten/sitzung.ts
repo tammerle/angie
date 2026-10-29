@@ -14,19 +14,18 @@ import { datenRepoPruefen, githubQuelle } from './github.ts'
 import { Speicher } from './speicher.ts'
 import { zugangLaden, zugangSchreiben, type ZugangStand } from './zugang.ts'
 
-export type Phase = 'start' | 'abgemeldet' | 'einrichtung' | 'bereit'
+export type Phase = 'start' | 'abgemeldet' | 'bereit'
 
 export interface SitzungStand {
   phase: Phase
   benutzer: string | null
   speicher: Speicher | null
-  einrichtungGrund: 'neu' | 'abgelaufen' | 'erneuern' | null
   anzeigenamen: Record<string, string>
 }
 
 const SITZUNG = 'salon-sitzung'
 
-let stand: SitzungStand = { phase: 'start', benutzer: null, speicher: null, einrichtungGrund: null, anzeigenamen: {} }
+let stand: SitzungStand = { phase: 'start', benutzer: null, speicher: null, anzeigenamen: {} }
 let geheim: { token: string | null; haupt: Uint8Array<ArrayBuffer> | null; zugang: ZugangStand | null } = {
   token: null,
   haupt: null,
@@ -83,25 +82,47 @@ function sitzungSichern() {
   }
 }
 
-function speicherStarten(token: string, zugang: Zugang, benutzer: string) {
+async function tokenAus(zugang: Zugang, haupt: Uint8Array<ArrayBuffer> | null): Promise<string | null> {
+  if (!zugang.token || !haupt) return null
+  try {
+    return await tokenEntschluesseln(haupt, zugang.token)
+  } catch {
+    return null
+  }
+}
+
+// Ohne GitHub-Schlüssel läuft die App lokal. Sobald jemand den Schlüssel
+// hinterlegt (auch auf einem anderen Gerät), verbindet sie sich von selbst.
+let nachSchluesselSehen: ReturnType<typeof setInterval> | null = null
+
+function schluesselBeobachten(an: boolean) {
+  if (nachSchluesselSehen) clearInterval(nachSchluesselSehen)
+  nachSchluesselSehen = null
+  if (!an) return
+  nachSchluesselSehen = setInterval(async () => {
+    if (document.visibilityState !== 'visible' || !stand.benutzer) return
+    const z = await zugangLaden()
+    const token = z ? await tokenAus(z.zugang, geheim.haupt) : null
+    if (z && token && stand.benutzer) {
+      geheim = { ...geheim, token, zugang: z }
+      sitzungSichern()
+      speicherStarten(token, z.zugang, stand.benutzer)
+    }
+  }, 60_000)
+}
+
+function speicherStarten(token: string | null, zugang: Zugang, benutzer: string) {
   stand.speicher?.stoppen()
   const namen = namenAus(zugang)
   const speicher = new Speicher({
-    quelle: DEMO ? demoQuelleImBrowser() : githubQuelle(token, zugang.daten),
+    quelle: DEMO ? demoQuelleImBrowser() : token ? githubQuelle(token, zugang.daten) : null,
     benutzer,
     anzeigename: (n) => stand.anzeigenamen[n] ?? namen[n] ?? n,
     zeitText: (iso) => zeitFormat(iso, gebiet()),
     datenbank: DEMO ? 'salon-rose-demo' : 'salon-rose',
   })
-  const ab = speicher.abonnieren(() => {
-    const s = speicher.holen()
-    if (s.sync.zustand === 'zugriff' && stand.speicher === speicher) {
-      ab()
-      speicher.stoppen()
-      setzen({ phase: 'einrichtung', einrichtungGrund: 'abgelaufen', speicher: null })
-    }
-  })
-  setzen({ phase: 'bereit', benutzer, speicher, einrichtungGrund: null, anzeigenamen: namen })
+  schluesselBeobachten(!DEMO && !token)
+  setzen({ phase: 'bereit', benutzer, speicher, anzeigenamen: namen })
   void speicher.starten()
 }
 
@@ -113,12 +134,11 @@ export async function wiederherstellen() {
       const s = JSON.parse(roh) as { benutzer: string; token: string | null; haupt: string | null }
       const z = await zugangLaden()
       if (s.benutzer && z) {
-        geheim = { token: s.token, haupt: s.haupt ? ausBase64(s.haupt) : null, zugang: z }
-        if (s.token) {
-          speicherStarten(s.token, z.zugang, s.benutzer)
-          return
-        }
-        setzen({ phase: 'einrichtung', benutzer: s.benutzer, einrichtungGrund: 'neu', anzeigenamen: namenAus(z.zugang) })
+        const haupt = s.haupt ? ausBase64(s.haupt) : null
+        const token = (await tokenAus(z.zugang, haupt)) ?? s.token
+        geheim = { token, haupt, zugang: z }
+        sitzungSichern()
+        speicherStarten(token, z.zugang, s.benutzer)
         return
       }
     }
@@ -128,32 +148,22 @@ export async function wiederherstellen() {
   setzen({ phase: 'abgemeldet' })
 }
 
+/** Login: nur Benutzername und Passwort. Fehlt der GitHub-Schlüssel noch, startet die App lokal. */
 export async function anmelden(name: string, passwort: string): Promise<'ok' | 'falsch' | 'netz'> {
   const z = await zugangLaden()
   if (!z) return 'netz'
   const offen = await oeffnen(z.zugang, name, passwort)
   if (!offen) return 'falsch'
-  geheim = { token: null, haupt: offen.haupt, zugang: z }
-  const benutzer = offen.benutzer.name
-  if (z.zugang.token) {
-    try {
-      geheim.token = await tokenEntschluesseln(offen.haupt, z.zugang.token)
-    } catch {
-      geheim.token = null
-    }
-  }
-  if (geheim.token) {
-    speicherStarten(geheim.token, z.zugang, benutzer)
-  } else {
-    setzen({ phase: 'einrichtung', benutzer, einrichtungGrund: 'neu', anzeigenamen: namenAus(z.zugang) })
-  }
+  const token = await tokenAus(z.zugang, offen.haupt)
+  geheim = { token, haupt: offen.haupt, zugang: z }
+  speicherStarten(token, z.zugang, offen.benutzer.name)
   sitzungSichern()
   return 'ok'
 }
 
 export type EinrichtungErgebnis = 'ok' | 'ungueltig' | 'kein-repo' | 'rechte' | 'netz' | 'abgemeldet'
 
-/** Neuen GitHub-Schlüssel prüfen, verschlüsselt in der Zugangsdatei ablegen und starten. */
+/** Neuen GitHub-Schlüssel prüfen, verschlüsselt in der Zugangsdatei ablegen und verbinden. */
 export async function einrichten(token: string): Promise<EinrichtungErgebnis> {
   const t = token.trim()
   if (!geheim.haupt || !stand.benutzer) return 'abgemeldet'
@@ -176,30 +186,25 @@ export async function einrichten(token: string): Promise<EinrichtungErgebnis> {
   return 'ok'
 }
 
-export function einrichtungOeffnen() {
-  setzen({ phase: 'einrichtung', einrichtungGrund: 'erneuern' })
-}
-
-export function einrichtungSchliessen() {
-  if (geheim.token && geheim.zugang && stand.benutzer) speicherStarten(geheim.token, geheim.zugang.zugang, stand.benutzer)
-}
-
 export function abmelden() {
   stand.speicher?.stoppen()
+  schluesselBeobachten(false)
   geheim = { token: null, haupt: null, zugang: geheim.zugang }
   try {
     sessionStorage.removeItem(SITZUNG)
   } catch {
     /* egal */
   }
-  setzen({ phase: 'abgemeldet', benutzer: null, speicher: null, einrichtungGrund: null })
+  setzen({ phase: 'abgemeldet', benutzer: null, speicher: null })
 }
 
-export type PasswortErgebnis = 'ok' | 'falsch' | 'netz' | 'rechte'
+export type PasswortErgebnis = 'ok' | 'falsch' | 'netz' | 'rechte' | 'getrennt'
 
 export async function passwortAendern(alt: string, neu: string): Promise<PasswortErgebnis> {
   const benutzer = stand.benutzer
-  if (!benutzer || !geheim.token) return 'rechte'
+  if (!benutzer) return 'rechte'
+  const token = geheim.token ?? (DEMO ? 'demo-token' : null)
+  if (!token) return 'getrennt'
   for (let versuch = 0; versuch < 2; versuch++) {
     const z = await zugangLaden()
     if (!z || (!DEMO && !navigator.onLine)) return 'netz'
@@ -207,7 +212,7 @@ export async function passwortAendern(alt: string, neu: string): Promise<Passwor
     if (!offen) return 'falsch'
     const eintrag = await verpacken(benutzer, offen.benutzer.anzeigename, neu, offen.haupt, z.zugang.argon2)
     const zugang: Zugang = { ...z.zugang, benutzer: z.zugang.benutzer.map((b) => (b.name === benutzer ? eintrag : b)) }
-    const e = await zugangSchreiben(geheim.token, zugang, z.sha)
+    const e = await zugangSchreiben(token, zugang, z.sha)
     if (e.ok) {
       geheim = { ...geheim, zugang: e.stand, haupt: offen.haupt }
       return 'ok'

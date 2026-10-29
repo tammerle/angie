@@ -1,6 +1,7 @@
 import { Check, CloudOff, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useDaten } from '../daten/aktionen.ts'
+import { gehe } from '../lib/router.ts'
 import { useT } from '../i18n/index.ts'
 
 // ---------- Hinweise (Toasts) ----------
@@ -100,27 +101,17 @@ export function Reiter<T extends string>({
 export function SyncAnzeige() {
   const t = useT()
   const { sync } = useDaten()
-  if (sync.zustand === 'offline')
-    return (
-      <span className="sync sync--offline" title={t.sync.offline}>
-        <CloudOff size={17} />
-        <span className="nur-leser">{t.sync.offline}</span>
-      </span>
-    )
-  if (sync.zustand === 'fehler')
-    return (
-      <span className="sync sync--fehler" title={t.sync.fehler}>
-        <TriangleAlert size={17} />
-        <span className="nur-leser">{t.sync.fehler}</span>
-      </span>
-    )
+  const zeige = (klasse: string, text: string, inhalt: ReactNode) => (
+    <button type="button" className={`sync ${klasse}`} title={text} aria-label={text} onClick={() => gehe('/einstellungen')}>
+      {inhalt}
+    </button>
+  )
+  if (sync.zustand === 'getrennt') return zeige('sync--getrennt', t.sync.getrennt, <CloudOff size={17} />)
+  if (sync.zustand === 'offline') return zeige('sync--offline', t.sync.offline, <CloudOff size={17} />)
+  if (sync.zustand === 'fehler' || sync.zustand === 'zugriff')
+    return zeige('sync--fehler', sync.zustand === 'zugriff' ? t.sync.zugriff : t.sync.fehler, <TriangleAlert size={17} />)
   if (sync.zustand === 'laeuft' && sync.ausstehend > 0)
-    return (
-      <span className="sync" title={t.sync.laeuft}>
-        <LoaderCircle size={17} className="sync__dreh" />
-        <span className="nur-leser">{t.sync.laeuft}</span>
-      </span>
-    )
+    return zeige('', t.sync.laeuft, <LoaderCircle size={17} className="sync__dreh" />)
   return null
 }
 

@@ -1,12 +1,12 @@
-import { CloudCheck, CloudOff, Info, KeyRound, Languages, LoaderCircle, Moon, Palette, RefreshCw, Sun, TriangleAlert } from 'lucide-react'
+import { CloudCheck, CloudOff, Info, Languages, LoaderCircle, Moon, Palette, RefreshCw, Sun, TriangleAlert } from 'lucide-react'
 import { profilAendern, syncJetzt, useDaten } from '../daten/aktionen.ts'
-import { einrichtungOeffnen } from '../daten/sitzung.ts'
 import { einstellungenSetzen, useEinstellungen } from '../daten/einstellungen.ts'
 import type { Einstellungen as EinstellungenTyp } from '../daten/typen.ts'
 import { useGebiet, useT } from '../i18n/index.ts'
 import type { Sprache } from '../i18n/texte.ts'
 import { zeitFormat } from '../lib/hilfen.ts'
 import { Segment } from '../ui/Felder.tsx'
+import { GithubVerbindung } from '../ui/GithubVerbindung.tsx'
 import { useRelativeZeit } from '../ui/Kleinteile.tsx'
 
 export function Einstellungen() {
@@ -15,6 +15,7 @@ export function Einstellungen() {
   const relativ = useRelativeZeit()
   const e = useEinstellungen()
   const { sync } = useDaten()
+  const getrennt = sync.zustand === 'getrennt' || sync.zustand === 'zugriff'
 
   // Sofort auf dem Gerät, dazu im eigenen Profil (gilt dann auch auf anderen Geräten).
   const setzen = (neu: Partial<EinstellungenTyp>) => {
@@ -23,7 +24,13 @@ export function Einstellungen() {
   }
 
   const SyncSymbol =
-    sync.zustand === 'laeuft' ? LoaderCircle : sync.zustand === 'offline' ? CloudOff : sync.zustand === 'bereit' ? CloudCheck : TriangleAlert
+    sync.zustand === 'laeuft'
+      ? LoaderCircle
+      : sync.zustand === 'offline' || sync.zustand === 'getrennt'
+        ? CloudOff
+        : sync.zustand === 'bereit'
+          ? CloudCheck
+          : TriangleAlert
   const zustandText =
     sync.zustand === 'laeuft'
       ? t.sync.laeuft
@@ -31,6 +38,8 @@ export function Einstellungen() {
         ? t.sync.offline
         : sync.zustand === 'zugriff'
           ? t.sync.zugriff
+          : sync.zustand === 'getrennt'
+          ? t.sync.getrennt
           : sync.zustand === 'fehler'
             ? t.sync.fehler
             : t.sync.synchron
@@ -38,6 +47,8 @@ export function Einstellungen() {
   return (
     <div className="seite einstellungen">
       <h1 className="seite__titel erscheinen">{t.einstellungen.titel}</h1>
+
+      {getrennt && <GithubVerbindung />}
 
       <section className="karte">
         <div className="karte__kopf">
@@ -95,25 +106,13 @@ export function Einstellungen() {
               <small>{sync.ausstehend ? t.einstellungen.ausstehend(sync.ausstehend) : t.einstellungen.allesGespeichert}</small>
             </div>
           </div>
-          <button type="button" className="knopf knopf--sanft" onClick={syncJetzt} disabled={sync.zustand === 'laeuft'}>
+          <button type="button" className="knopf knopf--sanft" onClick={syncJetzt} disabled={sync.zustand === 'laeuft' || getrennt}>
             <RefreshCw size={17} /> {t.einstellungen.jetzt}
           </button>
         </div>
       </section>
 
-      <section className="karte">
-        <div className="karte__kopf">
-          <h3 className="karte__titel">
-            <KeyRound size={20} /> {t.einstellungen.schluessel}
-          </h3>
-        </div>
-        <div className="karte__inhalt zeile-zwischen">
-          <p className="gedaempft klein">{t.einstellungen.schluesselText}</p>
-          <button type="button" className="knopf knopf--rahmen knopf--klein" onClick={einrichtungOeffnen}>
-            {t.einstellungen.schluessel}
-          </button>
-        </div>
-      </section>
+      {!getrennt && <GithubVerbindung />}
 
       <section className="karte">
         <div className="karte__kopf">

@@ -762,11 +762,20 @@ button.pille--aktiv:hover,
   place-items: center;
   width: 34px;
   height: 34px;
+  border-radius: 10px;
   color: var(--text-3);
+}
+
+.sync:hover {
+  background: var(--akzent-hauch);
 }
 
 .sync--offline {
   color: #c97a2c;
+}
+
+.sync--getrennt {
+  color: var(--akzent);
 }
 
 .sync--fehler {

@@ -196,6 +196,28 @@ describe('Speicher', () => {
     expect(Object.keys(q.alle())).toEqual(['notizen/n2.json'])
   })
 
+  it('ohne GitHub-Schlüssel: läuft lokal, nach dem Verbinden wird alles hochgeladen', async () => {
+    const q = demoQuelle()
+    const db = `test-getrennt-${zaehler++}`
+    const basis = { benutzer: 'angie', anzeigename: (n: string) => n, zeitText: (i: string) => i, datenbank: db, ruhe: 0, abgleichAlle: 60_000 }
+    const lokal = new Speicher({ ...basis, quelle: null })
+    laufend.push(lokal)
+    await lokal.starten()
+    expect(lokal.holen().sync).toMatchObject({ zustand: 'getrennt', ersterAbgleich: true })
+    lokal.speichern('notizen/n3.json', notiz('n3', 'vor dem Verbinden', 'angie'))
+    await lokal.abgleichen(true)
+    expect(lokal.holen().notizen).toHaveLength(1)
+    expect(Object.keys(q.alle())).toHaveLength(0)
+    lokal.stoppen()
+
+    const verbunden = new Speicher({ ...basis, quelle: q })
+    laufend.push(verbunden)
+    await verbunden.starten()
+    await verbunden.abgleichen(true)
+    expect(verbunden.holen().sync.zustand).toBe('bereit')
+    expect(Object.keys(q.alle())).toEqual(['notizen/n3.json'])
+  })
+
   it('Bilder: Foto wird hochgeladen und erscheint beim anderen Gerät', async () => {
     const q = demoQuelle()
     const a = geraet(q, 'angie')

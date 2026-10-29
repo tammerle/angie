@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "argon2": {
+    "m": 65536,
+    "t": 3,
+    "p": 1
+  },
+  "daten": {
+    "besitzer": "tammerle",
+    "repo": "angie-daten",
+    "zweig": "main"
+  },
+  "benutzer": [
+    {
+      "name": "angie",
+      "anzeigename": "Angie",
+      "salt": "wcTCzl3E4lmMtWSD+MXoyg==",
+      "schluessel": {
+        "iv": "fvseiuNnKFbzXWwx",
+        "daten": "Gdsu1HQ7CIswFY9tuuAA5yHtiVHJ6249J4K62ryA0Gnij++6sVsxar2KeFiz41mp"
+      }
+    },
+    {
+      "name": "eli",
+      "anzeigename": "Eli",
+      "salt": "5Ar74eJcp5EMXQcAwXamSw==",
+      "schluessel": {
+        "iv": "3pC5Om4EU77kVQV6",
+        "daten": "xXusvnwhY74B0fKZYG8zu+hRqIXLOiiVZA9xHVc8dgBn/tmoUmBP2p2WJn1jWKS5"
+      }
+    }
+  ],
+  "token": null
+}

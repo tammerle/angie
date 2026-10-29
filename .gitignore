@@ -16,3 +16,6 @@
 # Webseite (React + TypeScript); node_modules und dist schließt webseite/.gitignore aus
 !/webseite/
 !/.github/
+
+# Zugangsdatei der Webseite: nur Argon2-Salze und verschlüsselte Schlüssel, keine Passwörter
+!/zugang/

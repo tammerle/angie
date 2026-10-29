@@ -6,9 +6,17 @@ on:
     paths: ['webseite/**', '.github/workflows/webseite.yml']
   pull_request:
     paths: ['webseite/**', '.github/workflows/webseite.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  pruefen:
+  bauen:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,3 +31,22 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: webseite/dist
+
+  # Veröffentlicht die Seite unter https://tammerle.github.io/angie/
+  veroeffentlichen:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: bauen
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.seite.outputs.page_url }}
+    steps:
+      - id: seite
+        uses: actions/deploy-pages@v4

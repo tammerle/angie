@@ -1,10 +1,32 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>angie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#faf4f3" />
+    <meta name="description" content="Salon Rose – Kundenkartei" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Salon" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./symbole/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="preconnect" href="https://api.github.com" crossorigin />
+    <title>Salon · Karteikarten</title>
+    <script>
+      // Design vor dem ersten Bild setzen, damit nichts aufblitzt.
+      try {
+        var e = JSON.parse(localStorage.getItem('salon-einstellungen') || '{}')
+        if (e.design === 'dunkel') {
+          document.documentElement.dataset.theme = 'dark'
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#171215')
+        }
+        if (e.sprache) document.documentElement.lang = e.sprache
+      } catch (_) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

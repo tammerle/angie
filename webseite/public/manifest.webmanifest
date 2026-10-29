@@ -1,0 +1,17 @@
+{
+  "name": "Salon · Karteikarten",
+  "short_name": "Salon",
+  "description": "Kundenkartei des Salon Rose",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#faf4f3",
+  "theme_color": "#faf4f3",
+  "icons": [
+    { "src": "symbole/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "symbole/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "symbole/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

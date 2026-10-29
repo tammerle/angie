@@ -1,4 +1,4 @@
-import { ExternalLink, KeyRound, Lock, LogOut, ShieldCheck, User } from 'lucide-react'
+import { ClipboardPaste, ExternalLink, KeyRound, Lock, LogOut, ShieldCheck, User } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { DEMO, SALON } from '../konfig.ts'
 import { abmelden, anmelden, einrichten, einrichtungSchliessen, useSitzung, type EinrichtungErgebnis } from '../daten/sitzung.ts'
@@ -121,9 +121,11 @@ const FEHLERTEXT: Record<Exclude<EinrichtungErgebnis, 'ok'>, keyof ReturnType<ty
   abgemeldet: 'fehlerNetz',
 }
 
-const NEUES_REPO = 'https://github.com/new?name=angie-daten&visibility=private&description=Daten+der+Salon-Kartei'
+// Vorausgefülltes Formular für einen Fine-grained Token (Name, Besitzer, Laufzeit, Rechte).
 const NEUER_TOKEN =
-  'https://github.com/settings/personal-access-tokens/new?name=Salon-Kartei&description=Salon-Kartei+(angie+und+angie-daten)&expires_in=none'
+  'https://github.com/settings/personal-access-tokens/new?name=Salon-Kartei&description=Salon-Kartei%20(angie%20%2B%20angie-daten)&target_name=tammerle&expires_in=none&contents=write'
+
+const SIEHT_AUS_WIE_TOKEN = /^(github_pat_|ghp_)[A-Za-z0-9_]{30,}$/
 
 export function Einrichtung() {
   const t = useT()
@@ -132,48 +134,67 @@ export function Einrichtung() {
   const [pruefe, setPruefe] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
 
-  const absenden = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!token.trim() || pruefe) return
+  const pruefen = async (wert: string) => {
+    if (!wert.trim() || pruefe) return
     setPruefe(true)
     setFehler(null)
-    const ergebnis = await einrichten(token)
+    const ergebnis = await einrichten(wert)
     setPruefe(false)
     if (ergebnis !== 'ok') setFehler(t.einrichtung[FEHLERTEXT[ergebnis]] as string)
   }
 
+  // Eingefügter Schlüssel wird sofort geprüft – kein weiterer Klick nötig.
+  const aendern = (wert: string) => {
+    setToken(wert)
+    if (SIEHT_AUS_WIE_TOKEN.test(wert.trim())) void pruefen(wert)
+  }
+
+  const ausZwischenablage = async () => {
+    try {
+      aendern((await navigator.clipboard.readText()).trim())
+    } catch {
+      /* kein Zugriff: dann von Hand einfügen */
+    }
+  }
+
   return (
     <Buehne>
-      <form className="anmeldekarte anmeldekarte--breit" onSubmit={absenden}>
+      <form
+        className="anmeldekarte anmeldekarte--breit"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void pruefen(token)
+        }}
+      >
         <h1>{t.einrichtung.titel}</h1>
         <p className="anmeldekarte__unter">{einrichtungGrund === 'abgelaufen' ? t.einrichtung.abgelaufen : t.einrichtung.text}</p>
         <ol className="schritte">
           <li>
             <strong>{t.einrichtung.schritt1}</strong>
             <span>{t.einrichtung.schritt1Text}</span>
-            <a className="textlink" href={NEUES_REPO} target="_blank" rel="noreferrer">
-              {t.einrichtung.oeffnen} <ExternalLink size={14} />
-            </a>
-          </li>
-          <li>
-            <strong>{t.einrichtung.schritt2}</strong>
-            <span>{t.einrichtung.schritt2Text}</span>
             <a className="textlink" href={NEUER_TOKEN} target="_blank" rel="noreferrer">
               {t.einrichtung.oeffnen} <ExternalLink size={14} />
             </a>
           </li>
           <li>
-            <strong>{t.einrichtung.schritt3}</strong>
-            <PasswortFeld
-              symbol={KeyRound}
-              placeholder={t.einrichtung.feld}
-              aria-label={t.einrichtung.feld}
-              autoComplete="off"
-              zeigen={t.anmelden.zeigen}
-              verbergen={t.anmelden.verbergen}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-            />
+            <strong>{t.einrichtung.schritt2}</strong>
+            <div className="schritte__einfuegen">
+              <PasswortFeld
+                symbol={KeyRound}
+                placeholder={t.einrichtung.feld}
+                aria-label={t.einrichtung.feld}
+                autoComplete="off"
+                zeigen={t.anmelden.zeigen}
+                verbergen={t.anmelden.verbergen}
+                value={token}
+                onChange={(e) => aendern(e.target.value)}
+              />
+              {'clipboard' in navigator && 'readText' in navigator.clipboard && (
+                <button type="button" className="knopf knopf--sanft" onClick={ausZwischenablage} disabled={pruefe}>
+                  <ClipboardPaste size={17} /> {t.einrichtung.einfuegen}
+                </button>
+              )}
+            </div>
           </li>
         </ol>
         {fehler && (

@@ -1,4 +1,4 @@
-import { ArrowLeft, LayoutDashboard, LogOut, NotebookPen, Plus, Search, Settings, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, LayoutDashboard, LogOut, NotebookPen, Search, Settings, UserPlus, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useDaten } from '../daten/aktionen.ts'
 import { abmelden } from '../daten/sitzung.ts'
@@ -188,6 +188,7 @@ export function Rahmen({ children }: { children: ReactNode }) {
             { id: 'kunden', symbol: Users, text: t.navi.kunden, ziel: '/kunden' },
             { id: 'uebersicht', symbol: LayoutDashboard, text: t.navi.uebersicht, ziel: '/uebersicht' },
             { id: 'notizen', symbol: NotebookPen, text: t.navi.notizen, ziel: '/notizen' },
+            { id: 'einstellungen', symbol: Settings, text: t.navi.einstellungen, ziel: '/einstellungen' },
           ] as const
         ).map((n) => (
           <button
@@ -203,12 +204,6 @@ export function Rahmen({ children }: { children: ReactNode }) {
             {n.text}
           </button>
         ))}
-        <button type="button" className="navi__knopf navi__knopf--neu" onClick={() => neuerKundeOeffnen()}>
-          <span className="navi__symbol">
-            <Plus size={22} strokeWidth={2.2} />
-          </span>
-          {t.navi.neu}
-        </button>
       </nav>
     </div>
   )

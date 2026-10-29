@@ -198,16 +198,6 @@ html.gesperrt body {
   background: var(--akzent-sanft);
 }
 
-.navi__knopf--neu {
-  color: var(--text-2);
-}
-
-.navi__knopf--neu .navi__symbol {
-  background: var(--akzent);
-  color: var(--auf-akzent);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--akzent) 32%, transparent);
-}
-
 /* ---------- Seitenwechsel (View Transitions) ---------- */
 
 ::view-transition-old(root),
@@ -1010,7 +1000,28 @@ button.pille--aktiv:hover,
 
 .schritte .feld {
   width: 100%;
+}
+
+.schritte__einfuegen {
+  display: flex;
+  gap: 8px;
+  width: 100%;
   margin-top: 4px;
+}
+
+.schritte__einfuegen .feld {
+  flex: 1;
+  min-width: 0;
+}
+
+.schritte__einfuegen .knopf {
+  min-height: 46px;
+}
+
+@media (max-width: 520px) {
+  .schritte__einfuegen {
+    flex-direction: column;
+  }
 }
 
 .schritte__sicher {

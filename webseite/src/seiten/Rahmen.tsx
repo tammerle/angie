@@ -134,10 +134,18 @@ function rueckZiel(teile: string[]): string | null {
   return null
 }
 
+const NAVI = [
+  { id: 'kunden', symbol: Users, ziel: '/kunden' },
+  { id: 'uebersicht', symbol: LayoutDashboard, ziel: '/uebersicht' },
+  { id: 'notizen', symbol: NotebookPen, ziel: '/notizen' },
+  { id: 'einstellungen', symbol: Settings, ziel: '/einstellungen' },
+] as const
+
 export function Rahmen({ children }: { children: ReactNode }) {
   const t = useT()
   const route = useRoute()
   const bereich = bereichVon(route.pfad)
+  const naviIndex = NAVI.findIndex((n) => n.id === bereich)
   const ziel = rueckZiel(route.teile)
 
   return (
@@ -180,30 +188,36 @@ export function Rahmen({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="inhalt">{children}</main>
+      <main className="inhalt">
+        {/* Neu eingehängt je Bereich: ohne View Transitions spielt so die CSS-Animation. */}
+        <div className="wechsel" key={bereich}>
+          {children}
+        </div>
+      </main>
 
       <nav className="navi nur-handy" aria-label="Navigation">
-        {(
-          [
-            { id: 'kunden', symbol: Users, text: t.navi.kunden, ziel: '/kunden' },
-            { id: 'uebersicht', symbol: LayoutDashboard, text: t.navi.uebersicht, ziel: '/uebersicht' },
-            { id: 'notizen', symbol: NotebookPen, text: t.navi.notizen, ziel: '/notizen' },
-            { id: 'einstellungen', symbol: Settings, text: t.navi.einstellungen, ziel: '/einstellungen' },
-          ] as const
-        ).map((n) => (
-          <button
-            key={n.id}
-            type="button"
-            className={`navi__knopf ${bereich === n.id ? 'ist-aktiv' : ''}`}
-            aria-current={bereich === n.id ? 'page' : undefined}
-            onClick={() => (bereich === n.id && route.teile.length > 1 ? zurueck(n.ziel) : gehe(n.ziel))}
-          >
-            <span className="navi__symbol">
-              <n.symbol size={22} strokeWidth={bereich === n.id ? 2.1 : 1.7} />
-            </span>
-            {n.text}
-          </button>
-        ))}
+        <div className="navi__spur">
+          {/* Gleitende Markierung hinter dem aktiven Bereich */}
+          <span
+            className="navi__marke"
+            aria-hidden="true"
+            style={{ transform: `translateX(${Math.max(0, naviIndex) * 100}%)`, opacity: naviIndex < 0 ? 0 : 1 }}
+          />
+          {NAVI.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              className={`navi__knopf ${bereich === n.id ? 'ist-aktiv' : ''}`}
+              aria-current={bereich === n.id ? 'page' : undefined}
+              onClick={() => (bereich === n.id && route.teile.length > 1 ? zurueck(n.ziel) : gehe(n.ziel))}
+            >
+              <span className="navi__symbol">
+                <n.symbol size={22} strokeWidth={bereich === n.id ? 2.1 : 1.7} />
+              </span>
+              {t.navi[n.id]}
+            </button>
+          ))}
+        </div>
       </nav>
     </div>
   )

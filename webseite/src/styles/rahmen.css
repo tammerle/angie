@@ -153,8 +153,6 @@ html.gesperrt body {
   right: 0;
   bottom: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
   padding: 6px max(6px, var(--sicher-rechts)) calc(6px + var(--sicher-unten)) max(6px, var(--sicher-links));
   background: var(--flaeche-glas);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
@@ -163,7 +161,37 @@ html.gesperrt body {
   view-transition-name: navi;
 }
 
+.navi__spur {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.navi__marke {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 25%;
+  height: 32px;
+  pointer-events: none;
+  transition:
+    transform 380ms cubic-bezier(0.34, 1.3, 0.5, 1),
+    opacity 200ms ease;
+}
+
+.navi__marke::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 58px;
+  height: 32px;
+  margin-left: -29px;
+  border-radius: 16px;
+  background: var(--akzent-sanft);
+}
+
 .navi__knopf {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -194,8 +222,12 @@ html.gesperrt body {
   color: var(--akzent);
 }
 
-.navi__knopf.ist-aktiv .navi__symbol {
-  background: var(--akzent-sanft);
+.navi__symbol svg {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navi__knopf.ist-aktiv .navi__symbol svg {
+  transform: translateY(-1px) scale(1.06);
 }
 
 /* ---------- Seitenwechsel (View Transitions) ---------- */
@@ -245,11 +277,64 @@ html[data-richtung='wechsel']::view-transition-new(inhalt) {
 }
 
 @media (min-width: 1024px) {
-  html[data-richtung]::view-transition-old(inhalt) {
+  html[data-richtung='vor']::view-transition-old(inhalt),
+  html[data-richtung='zurueck']::view-transition-old(inhalt) {
     animation: 120ms ease both vt-aus;
   }
-  html[data-richtung]::view-transition-new(inhalt) {
+  html[data-richtung='vor']::view-transition-new(inhalt),
+  html[data-richtung='zurueck']::view-transition-new(inhalt) {
     animation: 240ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both vt-rein-auf;
+  }
+}
+
+/* Wechsel zwischen Kunden, Übersicht, Notizen, Einstellungen, Profil:
+   ganz leicht seitlich in Richtung der Leiste, mit Überblendung. */
+html[data-richtung='tab-vor']::view-transition-old(inhalt) {
+  animation: 150ms ease-in both vt-tab-raus-links;
+}
+html[data-richtung='tab-vor']::view-transition-new(inhalt) {
+  animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) 30ms both vt-tab-rein-rechts;
+}
+html[data-richtung='tab-zurueck']::view-transition-old(inhalt) {
+  animation: 150ms ease-in both vt-tab-raus-rechts;
+}
+html[data-richtung='tab-zurueck']::view-transition-new(inhalt) {
+  animation: 300ms cubic-bezier(0.22, 1, 0.36, 1) 30ms both vt-tab-rein-links;
+}
+
+/* Ohne View Transitions (ältere Browser): dieselbe Bewegung per CSS beim Einhängen. */
+html.ohne-vt[data-letzte-richtung='tab-vor'] .wechsel {
+  animation: vt-tab-rein-rechts 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html.ohne-vt[data-letzte-richtung='tab-zurueck'] .wechsel {
+  animation: vt-tab-rein-links 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html.ohne-vt[data-letzte-richtung='wechsel'] .wechsel {
+  animation: vt-rein-auf 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes vt-tab-raus-links {
+  to {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+@keyframes vt-tab-rein-rechts {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+}
+@keyframes vt-tab-raus-rechts {
+  to {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+@keyframes vt-tab-rein-links {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
   }
 }
 

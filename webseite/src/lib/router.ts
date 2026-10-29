@@ -9,7 +9,10 @@ export interface Route {
   suche: URLSearchParams
 }
 
-type Richtung = 'vor' | 'zurueck' | 'wechsel'
+type Richtung = 'vor' | 'zurueck' | 'wechsel' | 'tab-vor' | 'tab-zurueck'
+
+/** Reihenfolge der Bereiche wie in der unteren Leiste (Profil ganz rechts im Kopf). */
+const REIHENFOLGE = ['kunden', 'uebersicht', 'notizen', 'einstellungen', 'profil']
 
 function lesen(): Route {
   const roh = window.location.hash.replace(/^#/, '') || '/kunden'
@@ -38,7 +41,9 @@ function benachrichtigen() {
 }
 
 function richtungZwischen(alt: Route, neu: Route): Richtung {
-  if (bereich(alt) !== bereich(neu)) return 'wechsel'
+  const a = REIHENFOLGE.indexOf(bereich(alt))
+  const b = REIHENFOLGE.indexOf(bereich(neu))
+  if (a !== b) return a >= 0 && b >= 0 ? (b > a ? 'tab-vor' : 'tab-zurueck') : 'wechsel'
   const d = tiefe(neu) - tiefe(alt)
   return d > 0 ? 'vor' : d < 0 ? 'zurueck' : 'wechsel'
 }
@@ -49,6 +54,9 @@ function anwenden() {
   const neu = lesen()
   const alt = aktuell
   if (neu.pfad === alt.pfad && neu.suche.toString() === alt.suche.toString()) return
+  const richtung = richtungZwischen(alt, neu)
+  // Für Browser ohne View Transitions: CSS-Animation nach dieser Richtung (siehe rahmen.css).
+  document.documentElement.dataset.letzteRichtung = richtung
   const uebergang = document.startViewTransition
   if (!uebergang || bewegungArm() || uaUebergang || document.visibilityState !== 'visible') {
     uaUebergang = false
@@ -56,7 +64,7 @@ function anwenden() {
     benachrichtigen()
     return
   }
-  document.documentElement.dataset.richtung = richtungZwischen(alt, neu)
+  document.documentElement.dataset.richtung = richtung
   const t = document.startViewTransition(() => {
     flushSync(() => {
       aktuell = neu
@@ -69,6 +77,7 @@ function anwenden() {
 }
 
 if (typeof window !== 'undefined') {
+  if (!document.startViewTransition) document.documentElement.classList.add('ohne-vt')
   // Safari animiert die Wisch-Geste „zurück“ selbst – dann keine zweite Animation.
   window.addEventListener('popstate', (e) => {
     uaUebergang = Boolean((e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition)

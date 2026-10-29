@@ -30,5 +30,8 @@
       }
     }
   ],
-  "token": null
+  "token": {
+    "iv": "wi2EPSsAV/Ah/k3r",
+    "daten": "Q5iSJFc/jLAGyalLJDPxebJ6WCHDEpW5nb6ef7vOfzQ387NoPtIE8GHSDCfFPnqip8dTIhbIC78="
+  }
 }
